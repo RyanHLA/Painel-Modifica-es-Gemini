@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Lato:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Fundo principal branco */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary: Indigo #6366F1 */
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 32% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 214 32% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 239 84% 67%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Bordas suaves #F1F5F9 */
+    --border: 214 32% 95%;
+    --input: 214 32% 95%;
+    --ring: 239 84% 67%;
+
+    --radius: 0.5rem;
+
+    --font-serif: 'Playfair Display', Georgia, serif;
+    --font-sans: 'Lato', -apple-system, sans-serif;
+
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.06);
+    --shadow-medium: 0 8px 30px -8px hsl(0 0% 0% / 0.10);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    @apply tracking-tight;
+  }
+}
+
+@layer utilities {
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
