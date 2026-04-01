@@ -5,8 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminGalleryNew from '@/components/admin/AdminGalleryNew';
-import AdminClientAlbums from '@/components/admin/AdminClientAlbums';
 import AdminSettings from '@/components/admin/AdminSettings';
+import AdminClients from '@/components/admin/AdminClients';
+import AdminJobs from '@/components/admin/AdminJobs';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -101,21 +102,23 @@ const Admin = () => {
 
   const getPageTitle = () => {
     switch (activeTab) {
-      case 'dashboard': return 'Dashboard';
-      case 'gallery': return 'Portfólio';
-      case 'clients': return 'Clientes';
-      case 'settings': return 'Configurações';
-      default: return 'Dashboard';
+      case 'dashboard':  return 'Dashboard';
+      case 'gallery':    return 'Portfólio';
+      case 'clients':    return 'Clientes';
+      case 'jobs':       return 'Jobs';
+      case 'settings':   return 'Configurações';
+      default:           return 'Dashboard';
     }
   };
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <AdminDashboard />;
-      case 'gallery': return <AdminGalleryNew />;
-      case 'clients': return <AdminClientAlbums />;
-      case 'settings': return <AdminSettings />;
-      default: return <AdminDashboard />;
+      case 'dashboard':  return <AdminDashboard />;
+      case 'gallery':    return <AdminGalleryNew />;
+      case 'clients':    return <AdminClients />;
+      case 'jobs':       return <AdminJobs />;
+      case 'settings':   return <AdminSettings />;
+      default:           return <AdminDashboard />;
     }
   };
 

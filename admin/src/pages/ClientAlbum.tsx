@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,9 +50,10 @@ interface Photo {
 type Stage = 'loading' | 'pin' | 'selecting' | 'submitted' | 'invalid';
 
 const ClientAlbum = () => {
-  const { albumId } = useParams<{ slug: string; albumId: string }>();
+  const { slug, albumId } = useParams<{ slug: string; albumId: string }>();
   const [searchParams] = useSearchParams();
   const shareToken = searchParams.get('t');
+  const navigate = useNavigate();
 
   const [stage, setStage] = useState<Stage>('loading');
   const [pin, setPin] = useState('');
@@ -110,6 +111,19 @@ const ClientAlbum = () => {
       if (albumData.client_submitted_at) {
         setAlbum(albumData);
         setStage('submitted');
+        return;
+      }
+
+      // Verifica se há contrato pendente de assinatura
+      const { data: contract } = await supabase
+        .from('contracts')
+        .select('signed_at')
+        .eq('album_id', albumId)
+        .maybeSingle();
+
+      // Existe contrato e ainda não foi assinado → redireciona para assinatura
+      if (contract && !contract.signed_at) {
+        navigate(`/p/${slug}/${albumId}/contrato`);
         return;
       }
 

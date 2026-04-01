@@ -157,6 +157,7 @@ export type Database = {
           client_enabled: boolean
           client_pin: string | null
           client_submitted_at: string | null
+          contract_template: string | null
           cover_image_url: string | null
           created_at: string
           event_date: string | null
@@ -173,6 +174,7 @@ export type Database = {
           client_enabled?: boolean
           client_pin?: string | null
           client_submitted_at?: string | null
+          contract_template?: string | null
           cover_image_url?: string | null
           created_at?: string
           event_date?: string | null
@@ -189,6 +191,7 @@ export type Database = {
           client_enabled?: boolean
           client_pin?: string | null
           client_submitted_at?: string | null
+          contract_template?: string | null
           cover_image_url?: string | null
           created_at?: string
           event_date?: string | null
@@ -201,6 +204,57 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      contracts: {
+        Row: {
+          id: string
+          album_id: string
+          photographer_id: string
+          job_id: string | null
+          body_html: string
+          client_name: string | null
+          client_ip: string | null
+          signed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          album_id: string
+          photographer_id: string
+          job_id?: string | null
+          body_html: string
+          client_name?: string | null
+          client_ip?: string | null
+          signed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          album_id?: string
+          photographer_id?: string
+          job_id?: string | null
+          body_html?: string
+          client_name?: string | null
+          client_ip?: string | null
+          signed_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: true
+            referencedRelation: "albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_photographer_id_fkey"
+            columns: ["photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_selections: {
         Row: {
@@ -325,11 +379,121 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          id: string
+          photographer_id: string
+          name: string
+          email: string | null
+          whatsapp: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          photographer_id: string
+          name: string
+          email?: string | null
+          whatsapp?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          photographer_id?: string
+          name?: string
+          email?: string | null
+          whatsapp?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_photographer_id_fkey"
+            columns: ["photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          id: string
+          photographer_id: string
+          client_id: string
+          album_id: string | null
+          title: string
+          event_type: string | null
+          event_date: string | null
+          status: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          photographer_id: string
+          client_id: string
+          album_id?: string | null
+          title: string
+          event_type?: string | null
+          event_date?: string | null
+          status?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          photographer_id?: string
+          client_id?: string
+          album_id?: string | null
+          title?: string
+          event_type?: string | null
+          event_date?: string | null
+          status?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_photographer_id_fkey"
+            columns: ["photographer_id"]
+            isOneToOne: false
+            referencedRelation: "photographers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "albums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      sign_contract: {
+        Args: {
+          p_album_id: string
+          p_client_name: string
+          p_client_ip: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

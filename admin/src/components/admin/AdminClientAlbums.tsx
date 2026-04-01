@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Switch } from '@/components/ui/switch';
 import {
   Users, Eye, Copy, Check,
-  Lock, Image, Loader2, ChevronRight, RotateCcw
+  Lock, Image, Loader2, ChevronRight, RotateCcw, FileText, ExternalLink
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,7 +22,13 @@ interface Album {
   client_pin: string | null;
   selection_limit: number | null;
   client_submitted_at: string | null;
+  contract_template: string | null;
   created_at: string;
+}
+
+interface Contract {
+  signed_at: string | null;
+  client_name: string | null;
 }
 
 interface Selection {
@@ -44,11 +50,16 @@ const AdminClientAlbums = () => {
   const [selectionsLoading, setSelectionsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
+  // Contrato
+  const [contracts, setContracts] = useState<Record<string, Contract>>({});
+  const [savingContract, setSavingContract] = useState(false);
+
   // Form state
   const [formData, setFormData] = useState({
     client_enabled: false,
     client_pin: '',
     selection_limit: '',
+    contract_template: '',
   });
   
   const { toast } = useToast();
@@ -56,6 +67,7 @@ const AdminClientAlbums = () => {
   useEffect(() => {
     if (!photographerId) return;
     fetchAlbums();
+    fetchContracts();
     supabase
       .from('photographers')
       .select('slug')
@@ -65,6 +77,19 @@ const AdminClientAlbums = () => {
         if (data) setPhotographerSlug(data.slug);
       });
   }, [photographerId]);
+
+  const fetchContracts = async () => {
+    if (!photographerId) return;
+    const { data } = await supabase
+      .from('contracts')
+      .select('album_id, signed_at, client_name')
+      .eq('photographer_id', photographerId);
+    if (data) {
+      const map: Record<string, Contract> = {};
+      data.forEach((c) => { map[c.album_id] = { signed_at: c.signed_at, client_name: c.client_name }; });
+      setContracts(map);
+    }
+  };
 
   const fetchAlbums = async () => {
     if (!photographerId) return;
@@ -118,8 +143,46 @@ const AdminClientAlbums = () => {
       client_enabled: album.client_enabled,
       client_pin: album.client_pin || '',
       selection_limit: album.selection_limit?.toString() || '',
+      contract_template: album.contract_template || '',
     });
     setIsConfigDialogOpen(true);
+  };
+
+  const handleSaveContract = async () => {
+    if (!selectedAlbum || !photographerId) return;
+    if (!formData.contract_template.trim()) {
+      toast({ title: 'Contrato vazio', description: 'Escreva o texto do contrato antes de salvar.', variant: 'destructive' });
+      return;
+    }
+    setSavingContract(true);
+
+    // Salva o template no álbum
+    await supabase.from('albums').update({ contract_template: formData.contract_template }).eq('id', selectedAlbum.id);
+
+    // Substitui variáveis básicas e upsert na tabela contracts
+    const bodyHtml = formData.contract_template
+      .replace(/\n/g, '<br/>')
+      .replace(/\{\{titulo_album\}\}/g, selectedAlbum.title)
+      .replace(/\{\{categoria\}\}/g, selectedAlbum.category);
+
+    const existing = contracts[selectedAlbum.id];
+
+    if (existing) {
+      // Atualiza apenas se ainda não assinado
+      if (!existing.signed_at) {
+        await supabase.from('contracts').update({ body_html: bodyHtml }).eq('album_id', selectedAlbum.id);
+      }
+    } else {
+      await supabase.from('contracts').insert({
+        album_id: selectedAlbum.id,
+        photographer_id: photographerId,
+        body_html: bodyHtml,
+      });
+    }
+
+    await fetchContracts();
+    setSavingContract(false);
+    toast({ title: 'Contrato salvo!' });
   };
 
   const openSelectionsDialog = async (album: Album) => {
@@ -294,11 +357,21 @@ const AdminClientAlbums = () => {
                 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-medium text-slate-800 truncate">{album.title}</h3>
                     {album.client_enabled && (
                       <Badge className="bg-emerald-100 text-emerald-700 border-0">
                         Ativo
+                      </Badge>
+                    )}
+                    {contracts[album.id] && !contracts[album.id].signed_at && (
+                      <Badge className="bg-amber-100 text-amber-700 border-0">
+                        Contrato pendente
+                      </Badge>
+                    )}
+                    {contracts[album.id]?.signed_at && (
+                      <Badge className="bg-violet-100 text-violet-700 border-0">
+                        Contrato assinado
                       </Badge>
                     )}
                     {album.client_submitted_at && (
@@ -440,6 +513,52 @@ const AdminClientAlbums = () => {
                     </p>
                   </div>
                   
+                  {/* Contrato */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-slate-700">Contrato Digital (opcional)</Label>
+                      {contracts[selectedAlbum.id]?.signed_at && (
+                        <Badge className="bg-emerald-100 text-emerald-700 border-0 text-xs">
+                          Assinado por {contracts[selectedAlbum.id].client_name}
+                        </Badge>
+                      )}
+                    </div>
+                    <textarea
+                      value={formData.contract_template}
+                      onChange={(e) => setFormData({ ...formData, contract_template: e.target.value })}
+                      placeholder={`Ex:\nCONTRATO DE PRESTAÇÃO DE SERVIÇOS FOTOGRÁFICOS\n\nO presente contrato é firmado entre {{nome_cliente}} e o fotógrafo para o álbum {{titulo_album}}.\n\n...\n\nVariáveis disponíveis: {{titulo_album}}, {{categoria}}`}
+                      rows={6}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-y"
+                      disabled={!!contracts[selectedAlbum.id]?.signed_at}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSaveContract}
+                        disabled={savingContract || !!contracts[selectedAlbum.id]?.signed_at}
+                        className="border-slate-200 text-slate-600"
+                      >
+                        {savingContract ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+                        <span className="ml-1">{contracts[selectedAlbum.id] ? 'Atualizar Contrato' : 'Salvar Contrato'}</span>
+                      </Button>
+                      {contracts[selectedAlbum.id] && photographerSlug && (
+                        <a
+                          href={`${window.location.origin}/p/${photographerSlug}/${selectedAlbum.id}/contrato`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Ver link do contrato
+                        </a>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      O cliente precisará assinar antes de acessar a galeria de fotos.
+                    </p>
+                  </div>
+
                   {/* Share Link */}
                   <div className="rounded-xl bg-indigo-50 p-4">
                     <p className="mb-2 text-sm font-medium text-indigo-700">Link para compartilhar:</p>

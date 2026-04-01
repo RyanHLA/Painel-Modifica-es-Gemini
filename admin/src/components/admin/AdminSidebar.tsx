@@ -96,6 +96,15 @@ const FinanceiroIcon = () => (
   </svg>
 );
 
+const JobsIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2" />
+    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+    <line x1="12" y1="12" x2="12" y2="16" />
+    <line x1="10" y1="14" x2="14" y2="14" />
+  </svg>
+);
+
 // --- Mapeamento tab → { category, subItem } ---
 
 function tabToRoute(tab: string): { category: string; subItem: string } {
@@ -103,6 +112,7 @@ function tabToRoute(tab: string): { category: string; subItem: string } {
     case 'dashboard': return { category: 'Dashboard', subItem: '' };
     case 'gallery':   return { category: 'Galerias',  subItem: 'Seleção' };
     case 'clients':   return { category: 'Gestão',    subItem: 'Clientes' };
+    case 'jobs':      return { category: 'Gestão',    subItem: 'Jobs' };
     case 'settings':  return { category: '__settings__', subItem: '' };
     default:          return { category: 'Dashboard', subItem: '' };
   }
@@ -112,6 +122,7 @@ function routeToTab(category: string, subItem: string): string | null {
   if (category === 'Dashboard') return 'dashboard';
   if (category === 'Galerias' && subItem === 'Seleção') return 'gallery';
   if (category === 'Gestão' && subItem === 'Clientes') return 'clients';
+  if (category === 'Gestão' && subItem === 'Jobs') return 'jobs';
   return null;
 }
 
@@ -185,7 +196,7 @@ const AdminSidebar = ({ activeTab, onTabChange, onSignOut }: AdminSidebarProps) 
     { name: 'Dashboard', icon: DashboardIcon, hasArrow: false },
     { name: 'Galerias',  icon: GaleriasIcon,  hasArrow: true, subItems: [{ name: 'Seleção',    icon: SelecaoIcon }] },
     { name: 'Comercial', icon: ComercialIcon,  hasArrow: true, subItems: [{ name: 'Contratos',  icon: ContratosIcon }, { name: 'Propostas', icon: PropostasIcon }] },
-    { name: 'Gestão',    icon: GestaoIcon,     hasArrow: true, subItems: [{ name: 'Clientes',   icon: ClientesIcon  }, { name: 'Financeiro', icon: FinanceiroIcon }] },
+    { name: 'Gestão',    icon: GestaoIcon,     hasArrow: true, subItems: [{ name: 'Clientes', icon: ClientesIcon }, { name: 'Jobs', icon: JobsIcon }, { name: 'Financeiro', icon: FinanceiroIcon }] },
   ];
 
   return (

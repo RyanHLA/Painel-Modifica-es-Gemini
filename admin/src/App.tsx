@@ -4,6 +4,7 @@ import Auth from '@/pages/Auth';
 import Admin from '@/pages/Admin';
 import ClientProof from '@/pages/ClientProof';
 import ClientAlbum from '@/pages/ClientAlbum';
+import ClientContract from '@/pages/ClientContract';
 
 const App = () => {
   return (
@@ -16,6 +17,8 @@ const App = () => {
         <Route path="/cliente/:albumId" element={<ClientProof />} />
         {/* Nova rota multi-tenant com slug do fotógrafo */}
         <Route path="/p/:slug/:albumId" element={<ClientAlbum />} />
+        {/* Contrato digital — acessado antes da galeria */}
+        <Route path="/p/:slug/:albumId/contrato" element={<ClientContract />} />
       </Routes>
       <Toaster />
     </>
