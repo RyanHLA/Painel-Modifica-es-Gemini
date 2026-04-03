@@ -104,8 +104,8 @@ const Admin = () => {
     switch (activeTab) {
       case 'dashboard':  return 'Dashboard';
       case 'gallery':    return 'Portfólio';
-      case 'clients':    return 'Clientes';
-      case 'jobs':       return 'Jobs';
+      case 'clients':    return 'Gestão de Clientes';
+      case 'jobs':       return 'Gestão de Trabalhos';
       case 'settings':   return 'Configurações';
       default:           return 'Dashboard';
     }

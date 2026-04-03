@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePhotographerId } from '@/hooks/usePhotographerId';
 import { useToast } from '@/hooks/use-toast';
-import { Search, MoreVertical, X, Loader2, User } from 'lucide-react';
+import { Search, MoreVertical, X, Loader2, User, AlertTriangle } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -36,6 +36,7 @@ const AdminClients = () => {
   const [saving, setSaving] = useState(false);
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   useEffect(() => {
     if (!photographerId) return;
@@ -78,6 +79,29 @@ const AdminClients = () => {
 
   const handleSave = async () => {
     if (!photographerId || !form.name.trim()) return;
+
+    // Validação de E-mail
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!form.email.trim() || !emailRegex.test(form.email.trim())) {
+      toast({ 
+        title: 'E-mail inválido', 
+        description: 'Por favor, insira um endereço de e-mail válido.', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    // Validação de Telefone/WhatsApp (Exige 10 ou 11 dígitos numéricos)
+    const phoneDigits = form.whatsapp.replace(/\D/g, '');
+    if (phoneDigits.length !== 10 && phoneDigits.length !== 11) {
+      toast({ 
+        title: 'Telefone inválido', 
+        description: 'O telefone deve conter o DDD e o número (10 ou 11 dígitos).', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     setSaving(true);
 
     if (editingClient) {
@@ -118,20 +142,22 @@ const AdminClients = () => {
     setSaving(false);
   };
 
-  const handleDelete = async (client: Client) => {
+  const handleDeleteClick = (client: Client) => {
     setOpenMenuIndex(null);
-    const confirmed = window.confirm(
-      `Remover "${client.name}"? Esta ação não pode ser desfeita e vai impedir a exclusão caso haja Jobs vinculados.`
-    );
-    if (!confirmed) return;
+    setClientToDelete(client);
+  };
 
-    const { error } = await supabase.from('clients').delete().eq('id', client.id);
+  const confirmDelete = async () => {
+    if (!clientToDelete) return;
+    
+    const { error } = await supabase.from('clients').delete().eq('id', clientToDelete.id);
     if (error) {
       toast({ title: 'Erro ao remover cliente', description: 'Verifique se há Jobs vinculados a este cliente.', variant: 'destructive' });
     } else {
       toast({ title: 'Cliente removido.' });
       fetchClients();
     }
+    setClientToDelete(null);
   };
 
   const filtered = clients.filter(
@@ -150,6 +176,23 @@ const AdminClients = () => {
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' });
   };
 
+  const formatPhone = (phone: string | null) => {
+    if (!phone) return '—';
+    // Remove tudo que não for número
+    const numbers = phone.replace(/\D/g, ''); 
+    
+    // Celular (11 dígitos): (99) 99999-9999
+    if (numbers.length === 11) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+    }
+    // Fixo (10 dígitos): (99) 9999-9999
+    if (numbers.length === 10) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+    }
+    // Retorna o original se não tiver 10 ou 11 dígitos
+    return phone; 
+  };
+
   const getInitial = (name: string) => name.charAt(0).toUpperCase();
 
   return (
@@ -166,7 +209,6 @@ const AdminClients = () => {
         {/* Sub-header Controls */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-6 flex-1">
-            <h2 className="text-[20px] font-bold text-zinc-900">Gestão de Clientes</h2>
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-zinc-400" />
               <input
@@ -189,7 +231,7 @@ const AdminClients = () => {
         </div>
 
         {/* Table */}
-        <div className="w-full overflow-x-auto">
+        <div className="w-full">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white text-zinc-900 text-[13px] font-semibold border-b border-zinc-200">
@@ -231,11 +273,11 @@ const AdminClients = () => {
                       </div>
                     </td>
                     <td className="py-4 px-6 text-[13px] text-zinc-700">{client.email || '—'}</td>
-                    <td className="py-4 px-6 text-[13px] text-zinc-700">{client.whatsapp || '—'}</td>
+                    <td className="py-4 px-6 text-[13px] text-zinc-700">{formatPhone(client.whatsapp)}</td>
                     <td className="py-4 px-6 text-[13px] text-zinc-700">{formatDate(client.created_at)}</td>
-                    <td className="py-4 px-6 text-center relative">
+                    <td className={`py-4 px-6 text-center relative ${openMenuIndex === index ? 'z-30' : 'z-0'}`}>
                       <button
-                        className="text-zinc-400 hover:text-zinc-700 transition-colors outline-none p-1 rounded-md hover:bg-zinc-100"
+                        className="text-zinc-400 hover:text-zinc-700 transition-colors outline-none p-1 rounded-md hover:bg-zinc-100 relative z-50"
                         onClick={() => setOpenMenuIndex(openMenuIndex === index ? null : index)}
                       >
                         <MoreVertical className="w-5 h-5 mx-auto" />
@@ -247,18 +289,18 @@ const AdminClients = () => {
                             className="fixed inset-0 z-40"
                             onClick={() => setOpenMenuIndex(null)}
                           />
-                          <div className="absolute top-[50px] right-1/2 translate-x-1/2 w-32 bg-white border border-zinc-200 shadow-md rounded-lg z-50 flex flex-col py-1.5 overflow-hidden">
-                            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border-t border-l border-zinc-200 rotate-45" />
+                          <div className="absolute top-[40px] right-6 w-32 bg-white border border-zinc-200 shadow-lg rounded-lg z-50 flex flex-col py-1.5">
+                            <div className="absolute -top-1.5 right-4 w-3 h-3 bg-white border-t border-l border-zinc-200 rotate-45" />
                             <button
                               onClick={() => openEdit(client)}
-                              className="px-5 py-2 text-left text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 relative z-10 bg-white transition-colors"
+                              className="px-5 py-2 text-left text-[13px] font-medium text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 relative z-10 transition-colors"
                             >
                               Editar
                             </button>
                             <div className="h-px bg-zinc-100 my-1 relative z-10" />
                             <button
-                              onClick={() => handleDelete(client)}
-                              className="px-5 py-2 text-left text-[12px] font-medium text-red-600 hover:bg-red-50 relative z-10 bg-white transition-colors"
+                              onClick={() => handleDeleteClick(client)}
+                              className="px-5 py-2 text-left text-[13px] font-medium text-red-600 hover:bg-red-50 relative z-10 transition-colors"
                             >
                               Excluir
                             </button>
@@ -421,6 +463,50 @@ const AdminClients = () => {
                 {editingClient ? 'Salvar' : 'Criar Cliente'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão (Novo Design) */}
+      {clientToDelete && (
+        <div
+          className="fixed inset-0 w-full h-full z-[9999] bg-zinc-900/60 flex items-center justify-center p-4 font-sans animate-modal-backdrop"
+          onClick={() => setClientToDelete(null)}
+        >
+          <div
+            className="bg-white rounded-[4px] p-6 w-full max-w-[400px] shadow-sm ring-1 ring-gray-100 animate-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            
+            {/* Cabeçalho (Ícone + Título) */}
+            <div className="flex items-center gap-3 mb-3">
+              <AlertTriangle className="w-6 h-6 text-red-600" strokeWidth={1.5} />
+              <h2 className="text-[20px] font-semibold text-zinc-900">
+                Excluir cliente
+              </h2>
+            </div>
+
+            {/* Texto descritivo */}
+            <p className="text-[15px] leading-relaxed text-zinc-500 mb-8">
+              Tem certeza que deseja excluir o cliente <strong className="font-semibold text-zinc-900">{clientToDelete.name}</strong>? Esta ação não pode ser desfeita.
+            </p>
+
+            {/* Botões de Ação */}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setClientToDelete(null)}
+                className="px-4 py-2 bg-white border border-zinc-200 rounded-[4px] text-[15px] font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors"
+              >
+                Não, manter.
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 rounded-[4px] text-[15px] font-semibold text-white hover:bg-red-700 transition-colors shadow-sm"
+              >
+                Sim, excluir!
+              </button>
+            </div>
+            
           </div>
         </div>
       )}
